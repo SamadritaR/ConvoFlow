@@ -33,15 +33,15 @@ export function useSpeechSynthesis() {
   }, []);
 
   const speak = useCallback(
-    (text: string) => {
+    (text: string, options?: { voice?: SpeechSynthesisVoice; volume?: number; rate?: number }) => {
       if (!managerRef.current) {
         return;
       }
 
       managerRef.current.speak(text, {
-        voice: selectedVoice ?? undefined,
-        volume,
-        rate,
+        voice: options?.voice ?? selectedVoice ?? undefined,
+        volume: options?.volume ?? volume,
+        rate: options?.rate ?? rate,
       });
     },
     [rate, selectedVoice, volume],

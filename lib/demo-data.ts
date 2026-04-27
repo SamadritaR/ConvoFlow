@@ -1,5 +1,11 @@
 import { Participant, Scenario } from "@/lib/types";
 
+export type SpotlightTone = "signal" | "balance" | "decision";
+
+export type DemoStep =
+  | { type: "message"; participantId: string; text: string; topic: string; delay: number }
+  | { type: "spotlight"; delay: number; title: string; note: string; tone: SpotlightTone };
+
 export const participants: Participant[] = [
   { id: "maya", name: "Maya", role: "Product", color: "#63e6d8" },
   { id: "jon", name: "Jon", role: "Engineering", color: "#8db9ff" },
@@ -34,8 +40,8 @@ export const scenarios: Scenario[] = [
       { participantId: "maya", text: "Good. I need confidence on the mobile pass too.", delay: 1600, topic: "performance" },
       { participantId: "jon", text: "It needs one more optimization pass for the background field.", delay: 1700, topic: "performance" },
       { participantId: "lena", text: "I can simplify the transition layering if needed.", delay: 1900, topic: "design" },
-      { participantId: "maya", text: "Let’s do that if it preserves the calm feel.", delay: 1450, topic: "design" },
-      { participantId: "jon", text: "We still haven’t heard the research risk on this.", delay: 2100, topic: "research" },
+      { participantId: "maya", text: "Let's do that if it preserves the calm feel.", delay: 1450, topic: "design" },
+      { participantId: "jon", text: "We still haven't heard the research risk on this.", delay: 2100, topic: "research" },
       { participantId: "sora", text: "Users may miss why the prompts appear unless the timing feels earned.", delay: 2400, topic: "research" }
     ],
   },
@@ -51,8 +57,28 @@ export const scenarios: Scenario[] = [
       { participantId: "lena", text: "I worry the side rail gets ignored when energy spikes.", delay: 1550, topic: "placement" },
       { participantId: "maya", text: "Near the thread feels more actionable.", delay: 1500, topic: "placement" },
       { participantId: "jon", text: "Side rail is cleaner because it avoids interrupting flow.", delay: 1600, topic: "placement" },
-      { participantId: "sora", text: "We’re repeating preference without deciding the condition.", delay: 2200, topic: "decision" },
+      { participantId: "sora", text: "We're repeating preference without deciding the condition.", delay: 2200, topic: "decision" },
       { participantId: "lena", text: "Then maybe prompt placement changes with conversation intensity.", delay: 2100, topic: "resolution" }
     ],
   },
+];
+
+export const demoSequence: DemoStep[] = [
+  { type: "message", participantId: "maya", text: "We need a launch call by Friday.", topic: "launch", delay: 700 },
+  { type: "message", participantId: "jon", text: "Infra can make that if scope stays tight.", topic: "launch", delay: 1100 },
+  { type: "message", participantId: "lena", text: "The entry flow is close, but onboarding still needs one pass.", topic: "design", delay: 1200 },
+  { type: "spotlight", title: "Balanced room", note: "Several voices shape the start.", tone: "signal", delay: 850 },
+  { type: "message", participantId: "maya", text: "I still want the date locked now.", topic: "launch", delay: 1200 },
+  { type: "message", participantId: "maya", text: "If we wait longer, marketing loses the window.", topic: "launch", delay: 950 },
+  { type: "message", participantId: "maya", text: "I need a yes or no today.", topic: "decision", delay: 900 },
+  { type: "spotlight", title: "Imbalance forms", note: "One voice starts to compress the room.", tone: "signal", delay: 900 },
+  { type: "message", participantId: "jon", text: "We can do it, but that leaves less room for testing.", topic: "risk", delay: 1700 },
+  { type: "message", participantId: "sora", text: "Pilot feedback still points to confusion in the first minute.", topic: "evidence", delay: 2200 },
+  { type: "spotlight", title: "Gentle intervention", note: "The system invites the missing perspective in.", tone: "balance", delay: 800 },
+  { type: "message", participantId: "lena", text: "If we simplify the first-run path, the date feels safer.", topic: "resolution", delay: 1600 },
+  { type: "message", participantId: "maya", text: "That works. Lock Friday if the first-run path ships with it.", topic: "decision", delay: 1400 },
+  { type: "spotlight", title: "Balance returns", note: "The room widens, then settles.", tone: "balance", delay: 850 },
+  { type: "message", participantId: "jon", text: "Engineering can commit to that version.", topic: "decision", delay: 1500 },
+  { type: "message", participantId: "sora", text: "Research is aligned if the simpler path is explicit.", topic: "decision", delay: 1350 },
+  { type: "spotlight", title: "Clear convergence", note: "Detection, guidance, alignment.", tone: "decision", delay: 900 },
 ];

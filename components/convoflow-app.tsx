@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { participants, scenarios } from "@/lib/demo-data";
+import { participants, scenarios, demoSequence, SpotlightTone } from "@/lib/demo-data";
 import { buildInsights, buildIntervention, buildMetrics } from "@/lib/conversation-engine";
 import { ConversationMetrics, Intervention, Message, Participant, ScenarioKey } from "@/lib/types";
 
@@ -15,7 +15,6 @@ const scenarioAccent: Record<ScenarioKey, string> = {
 type Mode = "scenario" | "manual";
 const motionEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const calmTransition = { duration: 0.72, ease: motionEase };
-type SpotlightTone = "signal" | "balance" | "decision";
 type Spotlight = {
   id: string;
   title: string;
@@ -23,41 +22,6 @@ type Spotlight = {
   tone: SpotlightTone;
 };
 
-type DemoStep =
-  | {
-      type: "message";
-      participantId: string;
-      text: string;
-      topic: string;
-      delay: number;
-    }
-  | {
-      type: "spotlight";
-      delay: number;
-      title: string;
-      note: string;
-      tone: SpotlightTone;
-    };
-
-const demoSequence: DemoStep[] = [
-  { type: "message", participantId: "maya", text: "We need a launch call by Friday.", topic: "launch", delay: 700 },
-  { type: "message", participantId: "jon", text: "Infra can make that if scope stays tight.", topic: "launch", delay: 1100 },
-  { type: "message", participantId: "lena", text: "The entry flow is close, but onboarding still needs one pass.", topic: "design", delay: 1200 },
-  { type: "spotlight", title: "Balanced room", note: "Several voices shape the start.", tone: "signal", delay: 850 },
-  { type: "message", participantId: "maya", text: "I still want the date locked now.", topic: "launch", delay: 1200 },
-  { type: "message", participantId: "maya", text: "If we wait longer, marketing loses the window.", topic: "launch", delay: 950 },
-  { type: "message", participantId: "maya", text: "I need a yes or no today.", topic: "decision", delay: 900 },
-  { type: "spotlight", title: "Imbalance forms", note: "One voice starts to compress the room.", tone: "signal", delay: 900 },
-  { type: "message", participantId: "jon", text: "We can do it, but that leaves less room for testing.", topic: "risk", delay: 1700 },
-  { type: "message", participantId: "sora", text: "Pilot feedback still points to confusion in the first minute.", topic: "evidence", delay: 2200 },
-  { type: "spotlight", title: "Gentle intervention", note: "The system invites the missing perspective in.", tone: "balance", delay: 800 },
-  { type: "message", participantId: "lena", text: "If we simplify the first-run path, the date feels safer.", topic: "resolution", delay: 1600 },
-  { type: "message", participantId: "maya", text: "That works. Lock Friday if the first-run path ships with it.", topic: "decision", delay: 1400 },
-  { type: "spotlight", title: "Balance returns", note: "The room widens, then settles.", tone: "balance", delay: 850 },
-  { type: "message", participantId: "jon", text: "Engineering can commit to that version.", topic: "decision", delay: 1500 },
-  { type: "message", participantId: "sora", text: "Research is aligned if the simpler path is explicit.", topic: "decision", delay: 1350 },
-  { type: "spotlight", title: "Clear convergence", note: "Detection, guidance, alignment.", tone: "decision", delay: 900 },
-];
 
 function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
