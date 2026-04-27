@@ -38,20 +38,42 @@ export type Insight = {
   severity: number;
 };
 
+export type ConversationPhase =
+  | "exploring"
+  | "diverging"
+  | "looping"
+  | "converging"
+  | "deciding";
+
+export type InterventionType =
+  | "balance"
+  | "invite"
+  | "loop"
+  | "decision";
+
 export type Intervention = {
   id: string;
+  type: InterventionType;
   text: string;
   tone: "soft" | "focus" | "decision";
+  confidence: number;
   timestamp: number;
 };
 
 export type ConversationMetrics = {
   shareByParticipant: Record<string, number>;
   messageCountByParticipant: Record<string, number>;
+  averageWordsByParticipant: Record<string, number>;
+  dominanceScoreByParticipant: Record<string, number>;
   totalMessages: number;
   silenceByParticipant: Record<string, number>;
   dominantParticipantId: string | null;
   balanceScore: number;
+  phase: ConversationPhase;
+  phaseConfidence: number;
+  loopScore: number;
+  stagnationScore: number;
   repeatedTopics: string[];
   convergenceScore: number;
+  decisionReadiness: number;
 };
