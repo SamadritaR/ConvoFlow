@@ -13,6 +13,8 @@ const scenarioAccent: Record<ScenarioKey, string> = {
 };
 
 type Mode = "scenario" | "manual";
+const motionEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const calmTransition = { duration: 0.72, ease: motionEase };
 
 function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -50,7 +52,6 @@ export function ConvoFlowApp() {
     [messages, now],
   );
   const insights = useMemo(() => buildInsights(metrics, participants), [metrics]);
-  const latestIntervention = interventions[0] ?? null;
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
@@ -68,17 +69,12 @@ export function ConvoFlowApp() {
   }, [messages.length, interventions.length]);
 
   useEffect(() => {
-    const nextIntervention = buildIntervention(
-      metrics,
-      participants,
-      latestIntervention,
-      now,
-    );
+    const nextIntervention = buildIntervention(metrics, participants, interventions, now);
     if (!nextIntervention) {
       return;
     }
     setInterventions((current) => [nextIntervention, ...current].slice(0, 6));
-  }, [metrics, latestIntervention, now]);
+  }, [metrics, interventions, now]);
 
   useEffect(() => {
     return () => {
@@ -135,6 +131,14 @@ export function ConvoFlowApp() {
     <main className="relative min-h-screen overflow-hidden bg-canvas text-ink">
       <DynamicField metrics={metrics} messages={messages} />
       <div className="absolute inset-0 bg-grain opacity-100" />
+      <motion.div
+        animate={{
+          opacity: 0.16 + metrics.convergenceScore * 0.08,
+          scale: 0.985 + metrics.phaseConfidence * 0.025,
+        }}
+        className="absolute inset-[10%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_58%)] blur-3xl"
+        transition={calmTransition}
+      />
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-[1600px] flex-col px-5 pb-5 pt-5 md:px-8">
         <TopBar
@@ -149,20 +153,26 @@ export function ConvoFlowApp() {
         />
 
         <div className="mt-5 grid min-h-0 flex-1 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.55fr)_360px]">
-          <section className="relative flex min-h-[640px] min-w-0 flex-col overflow-hidden rounded-[28px] border border-white/8 bg-[rgba(7,15,24,0.72)] shadow-ambient backdrop-blur-xl">
+          <section className="relative flex min-h-[640px] min-w-0 flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,28,0.86),rgba(7,14,22,0.74))] shadow-ambient backdrop-blur-2xl">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_26%)]" />
             <div className="border-b border-white/8 px-6 py-5">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <div className="text-xs uppercase tracking-[0.24em] text-mist/70">
                     Ambient meeting field
                   </div>
-                  <div className="mt-2 text-[30px] leading-none text-ink">
+                  <div className="mt-2 text-[28px] leading-none text-ink">
                     Conversation in motion
                   </div>
                 </div>
                 <motion.div
-                  animate={{ borderColor: scenarioAccent[scenarioKey], opacity: isPlaying ? 1 : 0.7 }}
-                  className="rounded-full border px-4 py-2 text-sm text-white/80"
+                  animate={{
+                    borderColor: scenarioAccent[scenarioKey],
+                    boxShadow: `0 0 26px ${scenarioAccent[scenarioKey]}22`,
+                    opacity: isPlaying ? 1 : 0.72,
+                  }}
+                  className="rounded-full border bg-white/[0.025] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-white/72"
+                  transition={calmTransition}
                 >
                   {mode === "manual" ? "Manual room" : activeScenario.pulse}
                 </motion.div>
@@ -190,22 +200,25 @@ export function ConvoFlowApp() {
             </div>
           </section>
 
-          <aside className="flex min-h-[640px] min-w-0 flex-col rounded-[28px] border border-white/8 bg-[rgba(8,16,24,0.82)] px-5 py-5 shadow-ambient backdrop-blur-xl">
+          <aside className="flex min-h-[640px] min-w-0 flex-col rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,17,26,0.9),rgba(8,14,22,0.82))] px-5 py-5 shadow-ambient backdrop-blur-2xl">
             <div className="flex items-end justify-between gap-4 border-b border-white/8 pb-4">
               <div>
                 <div className="text-xs uppercase tracking-[0.24em] text-mist/70">
                   Intelligence layer
                 </div>
-                <div className="mt-2 text-2xl leading-none">Subtle guidance</div>
+                <div className="mt-2 text-[22px] leading-none">Subtle guidance</div>
               </div>
               <motion.div
                 animate={{
                   backgroundColor:
-                    metrics.balanceScore > 0.72 ? "rgba(99,230,216,0.18)" : "rgba(255,133,119,0.18)",
+                    metrics.convergenceScore > 0.68
+                      ? "rgba(99,230,216,0.12)"
+                      : "rgba(141,185,255,0.1)",
                 }}
-                className="rounded-full border border-white/10 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/70"
+                className="rounded-full border border-white/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-white/68"
+                transition={calmTransition}
               >
-                Balance {Math.round(metrics.balanceScore * 100)}
+                {metrics.phase} {Math.round(metrics.phaseConfidence * 100)}
               </motion.div>
             </div>
 
@@ -242,11 +255,11 @@ function TopBar({
   setMode: (mode: Mode) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-white/8 bg-[rgba(10,17,27,0.74)] px-4 py-4 backdrop-blur-xl">
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,19,29,0.84),rgba(9,15,24,0.72))] px-4 py-4 shadow-[0_18px_60px_rgba(3,10,18,0.28)] backdrop-blur-2xl">
       <div className="flex items-center gap-4">
         <div>
           <div className="text-xs uppercase tracking-[0.24em] text-mist/70">ConvoFlow</div>
-          <div className="mt-1 text-[22px] leading-none text-ink">AI-moderated group dynamics</div>
+          <div className="mt-1 text-[20px] leading-none text-ink">AI-moderated group dynamics</div>
         </div>
       </div>
 
@@ -256,10 +269,10 @@ function TopBar({
             <button
               key={scenario.key}
               className={cn(
-                "min-w-[138px] rounded-full px-4 py-2 text-sm transition",
+                "min-w-[138px] rounded-full px-4 py-2 text-[13px] transition",
                 scenarioKey === scenario.key
-                  ? "bg-white text-slate-950"
-                  : "text-white/70 hover:text-white",
+                  ? "bg-white text-slate-950 shadow-[0_10px_24px_rgba(255,255,255,0.12)]"
+                  : "text-white/68 hover:text-white",
               )}
               onClick={() => onScenarioChange(scenario.key)}
               type="button"
@@ -272,7 +285,7 @@ function TopBar({
         <div className="flex rounded-full border border-white/10 bg-white/[0.03] p-1">
           <button
             className={cn(
-              "rounded-full px-4 py-2 text-sm transition",
+              "rounded-full px-4 py-2 text-[13px] transition",
               mode === "scenario" ? "bg-white text-slate-950" : "text-white/70",
             )}
             onClick={() => setMode("scenario")}
@@ -282,7 +295,7 @@ function TopBar({
           </button>
           <button
             className={cn(
-              "rounded-full px-4 py-2 text-sm transition",
+              "rounded-full px-4 py-2 text-[13px] transition",
               mode === "manual" ? "bg-white text-slate-950" : "text-white/70",
             )}
             onClick={() => setMode("manual")}
@@ -293,7 +306,7 @@ function TopBar({
         </div>
 
         <button
-          className="rounded-full border border-white/10 bg-white px-5 py-2.5 text-sm text-slate-950 transition hover:scale-[1.01]"
+          className="rounded-full border border-white/10 bg-white px-5 py-2.5 text-[13px] text-slate-950 transition hover:scale-[1.01]"
           onClick={onPlay}
           type="button"
         >
@@ -301,7 +314,7 @@ function TopBar({
         </button>
 
         <button
-          className="rounded-full border border-white/10 px-5 py-2.5 text-sm text-white/75 transition hover:border-white/25 hover:text-white"
+          className="rounded-full border border-white/10 px-5 py-2.5 text-[13px] text-white/75 transition hover:border-white/25 hover:text-white"
           onClick={onReset}
           type="button"
         >
@@ -316,34 +329,41 @@ function ParticipantRibbon({ metrics }: { metrics: ConversationMetrics }) {
   return (
     <div className="grid grid-cols-2 gap-3 border-b border-white/8 px-5 py-4 md:grid-cols-4">
       {participants.map((participant) => {
-        const share = metrics.shareByParticipant[participant.id] ?? 0;
+        const share = metrics.dominanceScoreByParticipant[participant.id] ?? 0;
         const isDominant = metrics.dominantParticipantId === participant.id;
+        const silence = metrics.silenceByParticipant[participant.id] ?? 0;
+        const silenceFade = Math.min(silence / 90000, 0.55);
+        const activity = Math.max(0.28, share - silenceFade * 0.35);
 
         return (
           <motion.div
             animate={{
-              scale: isDominant ? 1.03 : 1,
-              opacity: share > 0 || isDominant ? 1 : 0.7,
+              scale: isDominant ? 1.035 + share * 0.06 : 0.985 - silenceFade * 0.04,
+              opacity: Math.max(0.42, 0.92 - silenceFade),
+              filter: `saturate(${0.82 + activity * 0.55})`,
             }}
-            className="rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3"
+            className="rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
             key={participant.id}
+            transition={calmTransition}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <motion.div
                   animate={{
-                    scale: 0.95 + share * 1.3,
-                    boxShadow: `0 0 ${16 + share * 32}px ${participant.color}`,
+                    scale: 0.86 + activity * 1.55,
+                    boxShadow: `0 0 ${18 + activity * 34}px ${participant.color}`,
+                    opacity: Math.max(0.45, 0.95 - silenceFade),
                   }}
                   className="h-3.5 w-3.5 rounded-full"
                   style={{ backgroundColor: participant.color }}
+                  transition={calmTransition}
                 />
                 <div>
-                  <div className="text-sm text-white">{participant.name}</div>
+                  <div className="text-[13px] text-white">{participant.name}</div>
                   <div className="text-xs text-mist/70">{participant.role}</div>
                 </div>
               </div>
-              <div className="text-sm text-white/80">{Math.round(share * 100)}%</div>
+              <div className="text-[13px] text-white/72">{Math.round(share * 100)}%</div>
             </div>
 
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
@@ -351,6 +371,7 @@ function ParticipantRibbon({ metrics }: { metrics: ConversationMetrics }) {
                 animate={{ width: `${Math.max(8, share * 100)}%` }}
                 className="h-full rounded-full"
                 style={{ backgroundColor: participant.color }}
+                transition={calmTransition}
               />
             </div>
           </motion.div>
@@ -371,7 +392,8 @@ function ConversationStream({
 }) {
   return (
     <div className="relative min-h-0 border-r border-white/8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[rgba(7,15,24,0.94)] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[rgba(7,15,24,0.96)] to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_28%)]" />
       <div
         className="scrollbar-thin relative flex h-full min-h-[340px] flex-col gap-3 overflow-y-auto px-5 py-5"
         ref={streamRef}
@@ -381,7 +403,7 @@ function ConversationStream({
             <motion.div
               animate={{ opacity: [0.5, 1, 0.5], y: [0, -6, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="max-w-sm text-center text-white/48"
+              className="max-w-sm text-center text-sm leading-7 text-white/48"
             >
               Start a scenario or send a message. The room will begin to reveal who is driving,
               who is fading, and when momentum turns into a loop.
@@ -405,12 +427,12 @@ function ConversationStream({
                 initial={{ opacity: 0, x: alignRight ? 20 : -20, y: 16 }}
                 key={message.id}
                 layout
-                transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+                transition={{ duration: 0.52, ease: motionEase }}
               >
                 <div
-                  className="max-w-[86%] rounded-[24px] border border-white/8 px-4 py-3 shadow-[0_18px_50px_rgba(2,8,16,0.28)]"
+                  className="max-w-[84%] rounded-[24px] border border-white/10 px-4 py-3 shadow-[0_22px_60px_rgba(2,8,16,0.34)] backdrop-blur-md"
                   style={{
-                    background: `linear-gradient(180deg, ${participant.color}16, rgba(255,255,255,0.03))`,
+                    background: `linear-gradient(180deg, ${participant.color}18, rgba(255,255,255,0.04))`,
                   }}
                 >
                   <div className="flex items-center gap-2">
@@ -418,12 +440,12 @@ function ConversationStream({
                       className="h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: participant.color }}
                     />
-                    <div className="text-sm text-white">{participant.name}</div>
+                    <div className="text-[13px] text-white">{participant.name}</div>
                     <div className="text-xs uppercase tracking-[0.16em] text-white/35">
                       {participant.role}
                     </div>
                   </div>
-                  <div className="mt-2 text-[15px] leading-6 text-white/86">{message.text}</div>
+                  <div className="mt-2 text-[14px] leading-6 text-white/86">{message.text}</div>
                 </div>
               </motion.div>
             );
@@ -457,7 +479,7 @@ function ManualComposer({
     <div className="flex min-h-[300px] flex-col justify-between bg-white/[0.015]">
       <div className="px-5 py-5">
         <div className="text-xs uppercase tracking-[0.24em] text-mist/70">Manual input</div>
-        <div className="mt-2 max-w-xs text-sm leading-6 text-white/62">
+        <div className="mt-2 max-w-xs text-[13px] leading-6 text-white/60">
           Drop into the room as any participant and watch the field react in real time.
         </div>
 
@@ -482,7 +504,7 @@ function ManualComposer({
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: participant.color }}
                 />
-                <div className="text-sm text-white">{participant.name}</div>
+                <div className="text-[13px] text-white">{participant.name}</div>
               </div>
               <div className="mt-1 text-xs text-mist/70">{participant.role}</div>
             </button>
@@ -493,7 +515,7 @@ function ManualComposer({
       <div className="border-t border-white/8 px-5 py-5">
         <div className="rounded-[22px] border border-white/8 bg-black/10 p-3">
           <textarea
-            className="min-h-[128px] w-full resize-none border-0 bg-transparent text-[15px] leading-6 text-white outline-none placeholder:text-white/28"
+            className="min-h-[128px] w-full resize-none border-0 bg-transparent text-[14px] leading-6 text-white outline-none placeholder:text-white/28"
             onChange={(event) => onDraftChange(event.target.value)}
             placeholder={
               mode === "manual"
@@ -507,7 +529,7 @@ function ManualComposer({
               Mode {mode}
             </div>
             <button
-              className="rounded-full border border-white/10 bg-white px-4 py-2 text-sm text-slate-950 transition hover:scale-[1.01]"
+              className="rounded-full border border-white/10 bg-white px-4 py-2 text-[13px] text-slate-950 transition hover:scale-[1.01]"
               onClick={onSend}
               type="button"
             >
@@ -540,13 +562,19 @@ function IntelligencePanel({
           {interventions.length > 0 ? (
             <motion.div
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[24px] border border-white/10 bg-white/[0.05] p-4"
+              className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
               exit={{ opacity: 0, y: -10 }}
               initial={{ opacity: 0, y: 14 }}
               layout
             >
-              <div className="text-xs uppercase tracking-[0.24em] text-mist/70">Prompt</div>
-              <div className="mt-3 text-lg leading-7 text-white/92">{interventions[0].text}</div>
+              <div className="text-[11px] uppercase tracking-[0.24em] text-mist/62">Prompt</div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.18em] text-white/30">
+                <span>{interventions[0].type}</span>
+                <span>{Math.round(interventions[0].confidence * 100)} confidence</span>
+              </div>
+              <div className="mt-3 max-w-[26ch] text-[15px] leading-7 text-white/88">
+                {interventions[0].text}
+              </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -554,16 +582,16 @@ function IntelligencePanel({
         {insights.map((insight) => (
           <motion.div
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4"
+            className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.02))] p-4"
             initial={{ opacity: 0, y: 10 }}
             key={insight.id}
             layout
           >
             <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-white/90">{insight.label}</div>
-              <div className="text-xs text-white/36">{Math.round(insight.severity * 100)}</div>
+              <div className="text-[13px] text-white/88">{insight.label}</div>
+              <div className="text-[11px] text-white/34">{Math.round(insight.severity * 100)}</div>
             </div>
-            <div className="mt-2 text-sm leading-6 text-white/52">{insight.detail}</div>
+            <div className="mt-2 text-[13px] leading-6 text-white/50">{insight.detail}</div>
           </motion.div>
         ))}
       </div>
@@ -579,32 +607,39 @@ function SignalConstellation({
   participants: Participant[];
 }) {
   return (
-    <div className="rounded-[26px] border border-white/8 bg-white/[0.03] p-4">
+    <div className="rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4">
       <div className="flex items-center justify-between">
         <div className="text-xs uppercase tracking-[0.24em] text-mist/70">Room state</div>
-        <div className="text-sm text-white/48">
-          {metrics.repeatedTopics.length > 0 ? "Loop detected" : "Live"}
-        </div>
+        <div className="text-[12px] uppercase tracking-[0.18em] text-white/42">{metrics.phase}</div>
       </div>
 
       <div className="relative mt-4 h-[220px] overflow-hidden rounded-[22px] border border-white/8 bg-[rgba(255,255,255,0.02)]">
+        <motion.div
+          animate={{
+            opacity: 0.12 + metrics.convergenceScore * 0.08,
+            scale: 1 - metrics.convergenceScore * 0.03,
+          }}
+          className="absolute inset-5 rounded-full border border-white/6"
+          transition={calmTransition}
+        />
         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 320 220" fill="none">
           {participants.map((participant, index) => {
-            const share = metrics.shareByParticipant[participant.id] ?? 0;
+            const share = metrics.dominanceScoreByParticipant[participant.id] ?? 0;
             const x = 64 + index * 66;
-            const y = 110 - share * 46 + (index % 2 === 0 ? -10 : 10);
+            const symmetryPull = metrics.convergenceScore * (index < 2 ? 8 : -8);
+            const y = 110 - share * 46 + (index % 2 === 0 ? -10 : 10) + symmetryPull;
             const centerX = 160;
             const centerY = 110;
             return (
               <motion.g
                 animate={{ opacity: share > 0 ? 1 : 0.45 }}
                 key={participant.id}
-                transition={{ duration: 0.5 }}
+                transition={calmTransition}
               >
                 <motion.path
                   animate={{
                     d: `M ${x} ${y} Q ${(x + centerX) / 2} ${centerY - 24 + share * 18} ${centerX} ${centerY}`,
-                    strokeOpacity: metrics.repeatedTopics.length ? 0.5 : 0.25 + share * 0.75,
+                    strokeOpacity: metrics.loopScore > 0.58 ? 0.5 : 0.25 + share * 0.75,
                   }}
                   d={`M ${x} ${y} Q ${(x + centerX) / 2} ${centerY} ${centerX} ${centerY}`}
                   stroke={participant.color}
@@ -616,16 +651,18 @@ function SignalConstellation({
         </svg>
 
         {participants.map((participant, index) => {
-          const share = metrics.shareByParticipant[participant.id] ?? 0;
+          const share = metrics.dominanceScoreByParticipant[participant.id] ?? 0;
           const messageCount = metrics.messageCountByParticipant[participant.id] ?? 0;
-          const top = 76 + (index % 2 === 0 ? 14 : 92) - share * 34;
-          const left = 28 + index * 70;
+          const top =
+            76 + (index % 2 === 0 ? 14 : 92) - share * 34 - metrics.convergenceScore * 10;
+          const left =
+            28 + index * 70 + (metrics.convergenceScore - 0.5) * (index - 1.5) * -14;
           return (
             <motion.div
               animate={{
-                scale: 0.85 + share * 1.5,
+                scale: 0.8 + share * 1.62,
                 opacity: Math.max(0.35, 0.55 + share),
-                y: metrics.repeatedTopics.length > 0 ? [0, -6, 0, 6, 0] : 0,
+                y: metrics.loopScore > 0.58 ? [0, -6, 0, 6, 0] : 0,
               }}
               className="absolute flex h-12 w-12 items-center justify-center rounded-full border border-white/10 text-xs text-white"
               key={participant.id}
@@ -636,9 +673,9 @@ function SignalConstellation({
                 top,
               }}
               transition={{
-                duration: metrics.repeatedTopics.length > 0 ? 3.2 : 0.5,
+                duration: metrics.loopScore > 0.58 ? 3.2 : 0.5,
                 ease: "easeInOut",
-                repeat: metrics.repeatedTopics.length > 0 ? Infinity : 0,
+                repeat: metrics.loopScore > 0.58 ? Infinity : 0,
               }}
             >
               {messageCount}
@@ -648,14 +685,14 @@ function SignalConstellation({
 
         <motion.div
           animate={{
-            scale: 0.95 + metrics.convergenceScore * 0.22,
-            opacity: 0.5 + metrics.convergenceScore * 0.35,
-            rotate: metrics.repeatedTopics.length > 0 ? 360 : 0,
+            scale: 0.92 + metrics.convergenceScore * 0.22,
+            opacity: 0.38 + metrics.convergenceScore * 0.32,
+            rotate: metrics.loopScore > 0.58 ? 360 : 0,
           }}
-          className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10"
+          className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(255,255,255,0.04),transparent_62%)]"
           transition={{
-            duration: metrics.repeatedTopics.length > 0 ? 8 : 0.8,
-            repeat: metrics.repeatedTopics.length > 0 ? Infinity : 0,
+            duration: metrics.loopScore > 0.58 ? 8 : 0.8,
+            repeat: metrics.loopScore > 0.58 ? Infinity : 0,
             ease: "linear",
           }}
         />
@@ -674,15 +711,15 @@ function DynamicField({
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {participants.map((participant, index) => {
-        const share = metrics.shareByParticipant[participant.id] ?? 0;
+        const share = metrics.dominanceScoreByParticipant[participant.id] ?? 0;
         const silence = metrics.silenceByParticipant[participant.id] ?? 0;
-        const intensity = Math.max(0.15, share * 1.2 - Math.min(silence / 120000, 0.6));
+        const intensity = Math.max(0.12, share * 1.26 - Math.min(silence / 120000, 0.62));
         return (
           <motion.div
             animate={{
-              opacity: 0.12 + intensity * 0.35,
-              scale: 0.9 + intensity * 0.45,
-              x: metrics.repeatedTopics.length > 0 ? [0, 18, 0, -18, 0] : [0, 8, 0, -8, 0],
+              opacity: 0.08 + intensity * 0.3 - metrics.convergenceScore * 0.04,
+              scale: 0.92 + intensity * 0.42,
+              x: metrics.loopScore > 0.58 ? [0, 18, 0, -18, 0] : [0, 8, 0, -8, 0],
               y: index % 2 === 0 ? [0, -10, 0, 10, 0] : [0, 10, 0, -10, 0],
             }}
             className="absolute rounded-full blur-3xl"
@@ -695,7 +732,7 @@ function DynamicField({
               top: `${14 + (index % 2) * 32}%`,
             }}
             transition={{
-              duration: metrics.repeatedTopics.length > 0 ? 7 : 10 + index,
+              duration: metrics.loopScore > 0.58 ? 7 : 10 + index,
               repeat: Infinity,
               ease: "easeInOut",
             }}
@@ -710,7 +747,10 @@ function DynamicField({
         }
         return (
           <motion.div
-            animate={{ opacity: [0, 0.34, 0], scaleX: [0.88, 1.06, 1.22] }}
+            animate={{
+              opacity: [0, 0.28 + metrics.convergenceScore * 0.06, 0],
+              scaleX: [0.88, 1.05, metrics.loopScore > 0.58 ? 1.08 : 1.18],
+            }}
             className="absolute left-[18%] right-[18%] h-px origin-center"
             initial={{ opacity: 0 }}
             key={message.id}
@@ -718,7 +758,7 @@ function DynamicField({
               background: `linear-gradient(90deg, transparent, ${participant.color}, transparent)`,
               top: `${22 + (index % 8) * 9}%`,
             }}
-            transition={{ duration: 3.2, ease: "easeOut" }}
+            transition={{ duration: 3.2, ease: motionEase }}
           />
         );
       })}

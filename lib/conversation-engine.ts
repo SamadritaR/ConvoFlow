@@ -63,9 +63,9 @@ const interventionCopy: Record<InterventionType, string[]> = {
     "Let’s open this up a touch before we narrow it.",
   ],
   invite: [
-    "We have a quieter perspective worth bringing in.",
-    "There may be a voice we have not fully brought forward yet.",
-    "This may improve if the quieter edge of the room comes in.",
+    "We have not heard enough from {name} yet.",
+    "{name} may have an angle worth bringing into the room.",
+    "It may help to draw {name} in before this settles.",
   ],
   loop: [
     "We may be circling the same point from slightly different angles.",
@@ -320,7 +320,7 @@ export function buildMetrics(
 
   const explorationScore = clamp((3 - Math.min(totalMessages, 3)) / 3 + uniqueRecentTopics * 0.08);
   const divergenceScore = clamp((uniqueRecentTopics / 4) * 0.6 + (1 - recentOverlap) * 0.4);
-  const phaseCandidates: Array<{ phase: ConversationPhase; score: number }> = [
+  const phaseCandidates = [
     { phase: "exploring", score: totalMessages < 3 ? 0.9 : explorationScore * 0.72 },
     { phase: "diverging", score: totalMessages >= 3 ? divergenceScore : 0.2 },
     { phase: "looping", score: totalMessages >= 5 ? loopScore : 0.1 },
@@ -332,7 +332,8 @@ export function buildMetrics(
       phase: "deciding",
       score: totalMessages >= 5 ? decisionReadiness * 0.92 : 0.08,
     },
-  ].sort((left, right) => right.score - left.score);
+  ] satisfies Array<{ phase: ConversationPhase; score: number }>;
+  phaseCandidates.sort((left, right) => right.score - left.score);
 
   const phase = phaseCandidates[0]?.phase ?? "exploring";
   const phaseConfidence = clamp(
@@ -443,7 +444,7 @@ function chooseCopy(
     options[0];
 
   if (participantName && type === "invite") {
-    return `${text.replace("yet.", "").replace("in.", "").replace("forward.", "")} ${participantName}.`;
+    return text.replaceAll("{name}", participantName);
   }
 
   return text;
