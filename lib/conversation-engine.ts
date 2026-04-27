@@ -60,8 +60,12 @@ export function buildMetrics(
   for (const message of messages) {
     topicCounts.set(message.topic, (topicCounts.get(message.topic) ?? 0) + 1);
   }
+  const recentTopicWindow = messages.slice(-5).map((message) => message.topic);
   const repeatedTopics = [...topicCounts.entries()]
-    .filter(([, count]) => count >= 3)
+    .filter(([topic, count]) => {
+      const recentHits = recentTopicWindow.filter((item) => item === topic).length;
+      return count >= 4 && recentHits >= 3;
+    })
     .map(([topic]) => topic);
 
   const recentTopics = messages.slice(-4).map((message) => message.topic);
@@ -169,11 +173,17 @@ export function buildIntervention(
   }
 
   if (metrics.dominantParticipantId) {
-    const silentParticipant = participants.find(
-      (participant) =>
-        participant.id !== metrics.dominantParticipantId &&
-        metrics.messageCountByParticipant[participant.id] <= 1,
-    );
+    const silentParticipant = [...participants]
+      .filter((participant) => participant.id !== metrics.dominantParticipantId)
+      .sort((left, right) => {
+        const countDifference =
+          metrics.messageCountByParticipant[left.id] -
+          metrics.messageCountByParticipant[right.id];
+        if (countDifference !== 0) {
+          return countDifference;
+        }
+        return metrics.silenceByParticipant[right.id] - metrics.silenceByParticipant[left.id];
+      })[0];
     if (silentParticipant) {
       return {
         id: `intervention-${now}`,
