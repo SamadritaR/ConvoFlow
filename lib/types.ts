@@ -77,3 +77,11 @@ export type ConversationMetrics = {
   convergenceScore: number;
   decisionReadiness: number;
 };
+
+export type Mode = "scenario" | "manual" | "live";
+
+export type MicState = "idle" | "listening" | "muted" | "unsupported";
+
+export type SpeechSynthesisState = "idle" | "speaking" | "paused" | "error";
+
+export type AudioLevel = { level: number; isActive: boolean };
