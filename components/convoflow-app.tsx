@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { participants, scenarios, demoSequence, SpotlightTone } from "@/lib/demo-data";
 import { buildInsights, buildIntervention, buildMetrics } from "@/lib/conversation-engine";
-import { ConversationMetrics, Intervention, Message, Participant, ScenarioKey } from "@/lib/types";
+import { ConversationMetrics, Intervention, Message, Mode, Participant, ScenarioKey } from "@/lib/types";
+import { LiveAudioControls } from "@/components/live-audio-controls";
 
 const scenarioAccent: Record<ScenarioKey, string> = {
   dominant: "#ff8577",
@@ -12,7 +13,6 @@ const scenarioAccent: Record<ScenarioKey, string> = {
   loop: "#8db9ff",
 };
 
-type Mode = "scenario" | "manual";
 const motionEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const calmTransition = { duration: 0.72, ease: motionEase };
 type Spotlight = {
@@ -363,7 +363,7 @@ export function ConvoFlowApp() {
                   className="rounded-full border bg-white/[0.025] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-white/72"
                   transition={calmTransition}
                 >
-                  {mode === "manual" ? "Manual mode" : spotlight?.title ?? activeScenario.pulse}
+                  {mode === "live" ? "Live mode" : mode === "manual" ? "Manual mode" : spotlight?.title ?? activeScenario.pulse}
                 </motion.div>
               </div>
             </div>
@@ -376,16 +376,29 @@ export function ConvoFlowApp() {
                 participants={participants}
                 streamRef={streamRef}
               />
-              <ManualComposer
-                draft={draft}
-                mode={mode}
-                onDraftChange={setDraft}
-                onModeChange={setMode}
-                onParticipantChange={setSelectedParticipantId}
-                onSend={handleManualSend}
-                participants={participants}
-                selectedParticipantId={selectedParticipantId}
-              />
+              {mode === "live" ? (
+                <LiveAudioControls
+                  interventions={interventions}
+                  onMessage={(msg) => {
+                    setMessages((current) => [
+                      ...current,
+                      createMessage(msg.participantId, msg.text, msg.topic ?? inferTopic(msg.text)),
+                    ]);
+                  }}
+                  participants={participants}
+                />
+              ) : (
+                <ManualComposer
+                  draft={draft}
+                  mode={mode}
+                  onDraftChange={setDraft}
+                  onModeChange={setMode}
+                  onParticipantChange={setSelectedParticipantId}
+                  onSend={handleManualSend}
+                  participants={participants}
+                  selectedParticipantId={selectedParticipantId}
+                />
+              )}
             </div>
           </motion.section>
 
@@ -474,23 +487,55 @@ function TopBar({
           >
             Manual
           </button>
+          <button
+            className={cn(
+              "rounded-full px-4 py-2 text-[13px] transition",
+              mode === "live" ? "bg-white text-slate-950" : "text-white/70",
+            )}
+            onClick={() => setMode("live")}
+            type="button"
+          >
+            Live
+          </button>
         </div>
 
-        <button
-          className="rounded-full border border-white/10 bg-white px-5 py-2.5 text-[13px] text-slate-950 transition hover:scale-[1.01]"
-          onClick={onPlayDemo}
-          type="button"
-        >
-          {isPlaying ? "Playing demo" : "Play Demo"}
-        </button>
+        {mode === "scenario" && (
+          <>
+            <button
+              className="rounded-full border border-white/10 bg-white px-5 py-2.5 text-[13px] text-slate-950 transition"
+              onClick={onPlayDemo}
+              type="button"
+            >
+              {isPlaying ? "Playing demo" : "Play Demo"}
+            </button>
 
-        <button
-          className="rounded-full border border-white/10 px-4 py-2.5 text-[13px] text-white/76 transition hover:border-white/25 hover:text-white"
-          onClick={onPlay}
-          type="button"
-        >
-          {activeScenarioLabel}
-        </button>
+            <button
+              className="rounded-full border border-white/10 px-4 py-2.5 text-[13px] text-white/76 transition hover:border-white/25 hover:text-white"
+              onClick={onPlay}
+              type="button"
+            >
+              {activeScenarioLabel}
+            </button>
+
+            <div className="flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+              {scenarios.map((scenario) => (
+                <button
+                  key={scenario.key}
+                  className={cn(
+                    "rounded-full px-3 py-2 text-[12px] transition",
+                    scenarioKey === scenario.key
+                      ? "bg-white text-slate-950 shadow-[0_10px_24px_rgba(255,255,255,0.12)]"
+                      : "text-white/55 hover:text-white/80",
+                  )}
+                  onClick={() => onScenarioChange(scenario.key)}
+                  type="button"
+                >
+                  {scenario.label.split(" ")[0]}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         <button
           className="rounded-full border border-white/10 px-5 py-2.5 text-[13px] text-white/75 transition hover:border-white/25 hover:text-white"
@@ -499,24 +544,6 @@ function TopBar({
         >
           Reset
         </button>
-
-        <div className="flex rounded-full border border-white/10 bg-white/[0.03] p-1">
-          {scenarios.map((scenario) => (
-            <button
-              key={scenario.key}
-              className={cn(
-                "rounded-full px-3 py-2 text-[12px] transition",
-                scenarioKey === scenario.key
-                  ? "bg-white text-slate-950 shadow-[0_10px_24px_rgba(255,255,255,0.12)]"
-                  : "text-white/55 hover:text-white/80",
-              )}
-              onClick={() => onScenarioChange(scenario.key)}
-              type="button"
-            >
-              {scenario.label.split(" ")[0]}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
