@@ -27,7 +27,7 @@ export class SpeechSynthesisManager {
     this.voicesChangedCallback = callback;
   }
 
-  speak(text: string, options: { volume?: number; rate?: number; voice?: SpeechSynthesisVoice } = {}): void {
+  speak(text: string, options: { volume?: number; rate?: number; pitch?: number; voice?: SpeechSynthesisVoice } = {}): void {
     if (!this.supported || !this.synth) {
       this.onStateChange("error");
       return;
@@ -39,7 +39,7 @@ export class SpeechSynthesisManager {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.volume = options.volume ?? 0.7;
     utterance.rate = options.rate ?? 0.8;
-    utterance.pitch = 1;
+    utterance.pitch = options.pitch ?? 1;
 
     if (options.voice) {
       utterance.voice = options.voice;

@@ -8,6 +8,16 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "Inter", "Segoe UI", "Helvetica Neue", "sans-serif"],
+      },
+      fontSize: {
+        eyebrow: ["11px", { lineHeight: "1.2", letterSpacing: "0.18em" }],
+        "body-sm": ["13px", { lineHeight: "1.5" }],
+        body: ["15px", { lineHeight: "1.6" }],
+        headline: ["22px", { lineHeight: "1.2" }],
+        "page-headline": ["32px", { lineHeight: "1.1" }],
+      },
       colors: {
         canvas: "#09111a",
         ink: "#eaf4ff",

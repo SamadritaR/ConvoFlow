@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Intervention, InterventionType, MicState } from "@/lib/types";
+import { getModeratorVoice, moderatorVoiceProfile } from "@/lib/voice-profiles";
 import { useAudioLevel } from "./use-audio-level";
 import { useMicrophone } from "./use-microphone";
 import { useSpeechRecognition } from "./use-speech-recognition";
@@ -39,6 +40,13 @@ export function useLiveMeeting({
   const retryTimerRef = useRef<number | null>(null);
   const skippedInterventionsRef = useRef<Set<string>>(new Set());
   const [retryTrigger, setRetryTrigger] = useState(0);
+  const moderatorVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+
+  useEffect(() => {
+    if (speechSynthesis.voices.length > 0 && !moderatorVoiceRef.current) {
+      moderatorVoiceRef.current = getModeratorVoice(speechSynthesis.voices) ?? null;
+    }
+  }, [speechSynthesis.voices]);
 
   const isReady =
     microphone.isMicOn &&
@@ -47,14 +55,15 @@ export function useLiveMeeting({
 
   const speakIntervention = useCallback(
     (intervention: Intervention) => {
-      if (!speechSynthesis.isSupported) {
-        return;
-      }
-
-      speechSynthesis.speak(intervention.text);
+      if (!speechSynthesis.isSupported) return;
+      speechSynthesis.speak(intervention.text, {
+        voice: moderatorVoiceRef.current ?? undefined,
+        rate: moderatorVoiceProfile.rate,
+        pitch: moderatorVoiceProfile.pitch,
+      });
       setLastSpokenInterventionId(intervention.id);
     },
-    [speechSynthesis],
+    [speechSynthesis.isSupported, speechSynthesis.speak],
   );
 
   const onMessageRef = useRef(onMessage);
