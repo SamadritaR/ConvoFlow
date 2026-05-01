@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Intervention, InterventionType, Participant } from "@/lib/types";
-import { demoSequence } from "@/lib/demo-data";
+import { DemoStep, demoSequence } from "@/lib/demo-data";
 import {
   getModeratorVoice,
   getVoiceForParticipant,
@@ -19,11 +19,18 @@ export function useScriptedMeeting({
   participants,
   interventions,
   onMessage,
+  script,
 }: {
   participants: Participant[];
   interventions: Intervention[];
   onMessage: (message: { participantId: string; text: string; topic?: string }) => void;
+  script?: DemoStep[];
 }) {
+  const scriptRef = useRef<DemoStep[]>(script ?? demoSequence);
+  useEffect(() => {
+    scriptRef.current = script ?? demoSequence;
+  }, [script]);
+
   const speechSynthesis = useSpeechSynthesis();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -61,12 +68,12 @@ export function useScriptedMeeting({
   // single advancement effect can decide when to move on.
   const scheduleStep = useCallback(() => {
     const index = stepIndexRef.current;
-    if (index >= demoSequence.length) {
+    if (index >= scriptRef.current.length) {
       setIsPlaying(false);
       return;
     }
 
-    const step = demoSequence[index];
+    const step = scriptRef.current[index];
     timerRef.current = window.setTimeout(() => {
       if (step.type === "message") {
         onMessageRef.current({

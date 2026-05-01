@@ -461,7 +461,8 @@ export function buildIntervention(
     return null;
   }
 
-  if (latestIntervention && now - latestIntervention.timestamp < 14000) {
+  // Cross-type cooldown: 8 seconds between any two interventions
+  if (latestIntervention && now - latestIntervention.timestamp < 8000) {
     return null;
   }
 
@@ -503,6 +504,21 @@ export function buildIntervention(
     });
   }
 
+  // Standalone silence invite — fires when a participant is absent even without a dominant speaker
+  if (quietParticipants.length > 0 && !metrics.dominantParticipantId && metrics.totalMessages >= 7) {
+    const silentParticipant = quietParticipants[0];
+    const silenceSec = metrics.silenceByParticipant[silentParticipant.id] / 1000;
+    const silenceFactor = clamp(silenceSec / 60);
+    signals.push({
+      type: "invite",
+      confidence: clamp(
+        0.5 + silenceFactor * 0.32 + (quietParticipants.length / participants.length) * 0.18,
+      ),
+      text: chooseCopy("invite", interventions, silentParticipant.name),
+      tone: "soft",
+    });
+  }
+
   if (metrics.loopScore > 0.64 && metrics.phase === "looping") {
     signals.push({
       type: "loop",
@@ -524,16 +540,14 @@ export function buildIntervention(
     });
   }
 
-  const winner = signals.sort((left, right) => right.confidence - left.confidence)[0];
-  if (!winner || winner.confidence < 0.7) {
-    return null;
-  }
+  // Per-type cooldown: 20 seconds before the same signal type can fire again
+  const eligibleSignals = signals.filter((signal) => {
+    const lastOfType = interventions.find((i) => i.type === signal.type);
+    return !lastOfType || now - lastOfType.timestamp >= 20000;
+  });
 
-  if (
-    latestIntervention &&
-    latestIntervention.type === winner.type &&
-    winner.confidence - latestIntervention.confidence < 0.08
-  ) {
+  const winner = eligibleSignals.sort((left, right) => right.confidence - left.confidence)[0];
+  if (!winner || winner.confidence < 0.7) {
     return null;
   }
 

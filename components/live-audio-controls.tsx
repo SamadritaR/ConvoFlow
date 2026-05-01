@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { Intervention, Participant } from "@/lib/types";
+import { liveSimulationScript } from "@/lib/demo-data";
 import { useLiveMeeting } from "@/hooks/use-live-meeting";
 import { useScriptedMeeting } from "@/hooks/use-scripted-meeting";
 import { MicStatus } from "./mic-status";
@@ -32,11 +33,19 @@ export function LiveAudioControls({
     onMessage,
   });
 
-  // Pass empty interventions so scripted demo doesn't double-speak alongside useLiveMeeting
+  // Scripted demo (existing demoSequence via default)
   const scriptedMeeting = useScriptedMeeting({
     participants,
     interventions: [],
     onMessage,
+  });
+
+  // Live simulation uses the longer realistic script
+  const liveSim = useScriptedMeeting({
+    participants,
+    interventions: [],
+    onMessage,
+    script: liveSimulationScript,
   });
 
   const { microphone, speechRecognition, speechSynthesis, audioLevel, micState } = liveMeeting;
@@ -100,19 +109,42 @@ export function LiveAudioControls({
 
         <div className="flex items-center justify-between gap-3">
           <MicStatus micState={micState} audioLevel={audioLevel.level} />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleMicToggle}
+              disabled={isRecognitionUnsupported}
+              className={cn(
+                "rounded-full border px-4 py-2 text-[13px] transition",
+                microphone.isMicOn
+                  ? "border-[rgba(255,133,119,0.3)] bg-[rgba(255,133,119,0.1)] text-[rgba(255,133,119,0.88)]"
+                  : "border-white/10 bg-white text-slate-950",
+                isRecognitionUnsupported && "cursor-not-allowed opacity-38",
+              )}
+            >
+              {microphone.isMicOn ? "Stop mic" : "Start mic"}
+            </button>
+            <button
+              type="button"
+              onClick={liveSim.isPlaying ? liveSim.pause : liveSim.play}
+              className={cn(
+                "rounded-full border px-4 py-2 text-[13px] transition",
+                liveSim.isPlaying
+                  ? "border-white/10 bg-white/[0.06] text-white/70"
+                  : "border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white/90",
+              )}
+            >
+              {liveSim.isPlaying ? "Pause sim" : "Play simulation"}
+            </button>
+          </div>
+        </div>
+        <div className="mt-2 flex justify-end">
           <button
             type="button"
-            onClick={handleMicToggle}
-            disabled={isRecognitionUnsupported}
-            className={cn(
-              "rounded-full border px-4 py-2 text-[13px] transition",
-              microphone.isMicOn
-                ? "border-[rgba(255,133,119,0.3)] bg-[rgba(255,133,119,0.1)] text-[rgba(255,133,119,0.88)]"
-                : "border-white/10 bg-white text-slate-950",
-              isRecognitionUnsupported && "cursor-not-allowed opacity-38",
-            )}
+            onClick={liveSim.reset}
+            className="text-[11px] text-white/36 hover:text-white/55 transition"
           >
-            {microphone.isMicOn ? "Stop mic" : "Start mic"}
+            Reset simulation
           </button>
         </div>
 
