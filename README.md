@@ -1,51 +1,67 @@
 # ConvoFlow
 
-AI moderator for group conversations.
+A perceptual instrument for group conversations.
 
-ConvoFlow watches how a group is talking and steps in when the conversation breaks down. It catches the three things that quietly ruin most meetings: one person taking over, someone going quiet, and the group looping on the same point without deciding anything.
+Most meetings fail on structure, not content. One voice takes over. A quieter person checks out. The group circles the same idea three times without landing. These patterns are visible in real time to anyone trained to watch for them, and invisible to everyone else. ConvoFlow makes them visible, and when the moment is right, audible.
 
-## Why I'm building this
+## What this actually is
 
-Most meetings don't fail because people are unprepared. They fail because the structure of the conversation falls apart. One voice dominates. A quieter person checks out. The group circles the same idea three times without landing. A good human moderator catches all of this without thinking. Most meetings don't have a good human moderator.
+This is not a meeting analytics tool. It does not summarize, transcribe, or score your meeting after the fact. It watches the *shape* of a conversation as it happens, and intervenes only when intervention is warranted. Think of it less as a productivity app and more as a sense organ the group did not previously have.
 
-ConvoFlow is meant to do that job. Quietly, in real time, without taking over the room.
+The hard problem here is not detection. The hard problem is **presence**. An AI that can speak into a human conversation has to know when to stay silent. Most of ConvoFlow's design is about restraint, not capability. The engine continuously scores three structural failure modes. Below a confidence threshold, signals stay quiet in the host's peripheral vision. Above it, the moderator speaks. Once. Briefly. Then it goes back to listening.
 
-## What it does
+## What it watches for
 
-The engine watches three signals as the conversation runs:
+**Dominance.** When one voice's share of the talking gets too large for the group's size and balance.
 
-Dominance, when one person's share of the talking gets too large for the group.
+**Silence.** When a participant stays out of the conversation past the point where their input would normally land.
 
-Silence, when a participant stays out of it past the point where they should have weighed in.
+**Circularity.** When the discussion keeps returning to the same point without converging on a decision.
 
-Circularity, when the conversation keeps coming back to the same point without converging on a decision.
+These three are not arbitrary. They are the structural failure modes a skilled human facilitator catches by instinct, and the ones that quietly degrade meeting quality more than any content level problem.
 
-When the engine is confident enough about a signal (0.8 or higher), ConvoFlow steps in. You see it as a moderator card right in the conversation, and in Live mode you hear it speak. Lower confidence signals stay in the side panel as quieter guidance, so the host can see them without the room being interrupted.
+## How presence works
 
-## Demo
+Two layers, on purpose.
 
-The current build ships three scripted scenarios that show each pattern:
+**Quiet guidance.** Lower confidence signals (anywhere in the 0.5 to 0.8 range) appear in the side panel as small cards. The host sees them. The room does not. This is the moderator thinking out loud, not speaking out loud. It catches things a real moderator would also notice but might not act on.
 
-Dominant. Maya stacks four messages back to back. The engine catches the imbalance and intervenes.
+**Intervention.** When confidence crosses 0.8, ConvoFlow speaks. The moderator card moves into the conversation column itself, distinct from participants, and in Live mode it speaks aloud through the moderator voice. One short sentence. Never a paragraph. Never two interventions in a row.
 
-Silent. Lena drops out of the conversation while the group keeps going. The engine surfaces a gentle invite to bring her back in.
+The threshold is the whole product. Tune it too low and the AI becomes a backseat driver and the room resents it. Tune it too high and it never earns its keep. 0.8 is where v1 lands. v2 will calibrate per team based on how often interventions are accepted versus dismissed.
 
-Circular. The group hits the same point three times without resolving. The engine names the loop and pushes toward a decision.
+## The three demo scenarios
 
-There's also a Live mode with mic input and a browser based moderator voice.
+The current build ships with three scripted scenarios that each isolate one failure mode, so you can see the engine react to a clean signal.
+
+**Dominant.** Maya stacks four messages back to back about a launch deadline. Other voices get one sentence each. The engine catches the imbalance forming and the moderator surfaces a redistribution.
+
+**Silent.** Lena drops out of the conversation while the group keeps going on a topic where her input matters. The engine surfaces a gentle invite to bring her back in before her absence calcifies.
+
+**Circular.** The group returns to the same point three times without resolving. The engine names the loop and pushes toward a decision rather than letting it run for another cycle.
+
+There is also a Live mode where you talk into the mic as one of the participants and the engine responds in real time, with the moderator speaking through the browser's speech synthesis.
+
+## Why I am building this
+
+Most attempts at AI for meetings have been transcription tools wearing different costumes. They sit outside the conversation, write things down, and hand you a summary later. None of them are *in* the conversation. None of them are accountable for what happens next.
+
+I wanted to build the version that is in the room. That requires answering a question almost nobody in this space has answered well: what should an AI presence in a human conversation actually feel like? Not a tool. Not a participant either. Something more like a quiet fifth person whose only job is to notice what the room cannot notice about itself.
+
+The interesting work in ConvoFlow is not the signal detection. The interesting work is the design of restraint.
 
 ## Roadmap
 
-**v1, current prototype (web).** Browser based demo of the engine across the three scenario types. Real time signal scoring. Moderator presence visible in the conversation and audible in Live mode. Visual room state mapping.
+**v1, current prototype.** Web based demo of the engine across the three scenario types. Real time signal scoring with the two layer presence model. Visual room state mapping. Browser based moderator voice in Live mode.
 
-**v2, browser extension (next 3 months).** Chrome and Edge extension for Google Meet and Zoom Web. Listens to the meeting tab, surfaces signals to the host's side panel, optionally speaks interventions through the host's audio. Real TTS through ElevenLabs so the moderator voice actually sounds human.
+**v2, browser extension (next 3 months).** Chrome and Edge extension that runs over Google Meet and Zoom Web. Captures tab audio, runs the engine, surfaces signals to the host's side panel, optionally speaks interventions through the host's audio output. Premium voice through ElevenLabs so the moderator stops sounding like a robot. Per team threshold calibration based on which interventions get accepted versus dismissed.
 
-**v3, bot participant (6+ months).** ConvoFlow joins the meeting as its own participant with audio in and out. Speaks interventions directly into the call. Learns each team's specific dynamics over time. Native integrations with Zoom, Meet, and Teams. Post meeting summaries with conversation health metrics.
+**v3, bot participant (6+ months).** ConvoFlow joins the call as its own participant with audio in and out. Speaks interventions directly into the room rather than through the host. Native integrations with Zoom, Meet, and Teams. Post meeting summaries focused on conversation health, not content recap.
 
 ## Tech
 
-Next.js 14, TypeScript, Tailwind. Engine is custom signal detection logic written in TypeScript, with an ML upgrade path planned for v2. Voice in v1 is the Web Speech API, moving to ElevenLabs in v2. Design is Linear inspired, built to read at a glance while a real conversation is happening.
+Next.js 14, TypeScript, Tailwind CSS. The engine is custom signal detection logic written in TypeScript, with a clean upgrade path to learned models in v2. Voice in v1 runs on the browser's Web Speech API. The dashboard is built to be readable at a glance during a live conversation, which is a different design constraint than most analytics UI.
 
 ## Status
 
-Submitted as part of the Handshake Codex Challenge.
+Submitted as part of the Handshake Codex Challenge. Initially aimed at engineering standups, cross functional product meetings, and group facilitators.
