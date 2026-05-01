@@ -1,62 +1,51 @@
 # ConvoFlow
 
-ConvoFlow is a frontend prototype for an AI-mediated conversation interface. It does not summarize or transcribe meetings. It demonstrates how an ambient system can improve group discussion quality in real time by sensing participation patterns, detecting imbalance, and introducing minimal moderation prompts.
+AI moderator for group conversations.
 
-## What it demonstrates
+ConvoFlow watches how a group is talking and steps in when the conversation breaks down. It catches the three things that quietly ruin most meetings: one person taking over, someone going quiet, and the group looping on the same point without deciding anything.
 
-- A live meeting environment with four participants
-- Three guided demo scenarios:
-  - dominant speaker
-  - silent participant
-  - circular discussion
-- Manual mode for injecting messages as different participants
-- A visual intelligence layer that reacts to participation balance, silence, repetition, and convergence
-- A lightweight intervention engine that produces subtle prompts without turning the system into a chatbot
+## Why I'm building this
 
-## Tech stack
+Most meetings don't fail because people are unprepared. They fail because the structure of the conversation falls apart. One voice dominates. A quieter person checks out. The group circles the same idea three times without landing. A good human moderator catches all of this without thinking. Most meetings don't have a good human moderator.
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- Framer Motion
+ConvoFlow is meant to do that job. Quietly, in real time, without taking over the room.
 
-## Run locally
+## What it does
 
-```bash
-npm install
-npm run dev
-```
+The engine watches three signals as the conversation runs:
 
-Then open `http://localhost:3000`.
+Dominance, when one person's share of the talking gets too large for the group.
 
-## Product concept
+Silence, when a participant stays out of it past the point where they should have weighed in.
 
-Most tools capture conversations after the fact. ConvoFlow focuses on the quality of interaction while the conversation is still happening.
+Circularity, when the conversation keeps coming back to the same point without converging on a decision.
 
-The prototype uses:
+When the engine is confident enough about a signal (0.8 or higher), ConvoFlow steps in. You see it as a moderator card right in the conversation, and in Live mode you hear it speak. Lower confidence signals stay in the side panel as quieter guidance, so the host can see them without the room being interrupted.
 
-- a central conversation stream as the live room
-- a dynamic visual field to express energy, balance, and drift
-- a side intelligence layer for ambient prompts and state shifts
+## Demo
 
-The goal is that a user understands the product through motion, timing, and structure within seconds.
+The current build ships three scripted scenarios that show each pattern:
 
-## Architecture
+Dominant. Maya stacks four messages back to back. The engine catches the imbalance and intervenes.
 
-- `app/`: App Router entrypoints and global styling
-- `components/convoflow-app.tsx`: primary experience, layout, motion, and interaction flow
-- `lib/demo-data.ts`: participants and demo scenarios
-- `lib/conversation-engine.ts`: rules-based metrics, insights, and interventions
-- `lib/types.ts`: shared types
+Silent. Lena drops out of the conversation while the group keeps going. The engine surfaces a gentle invite to bring her back in.
 
-## Future vision
+Circular. The group hits the same point three times without resolving. The engine names the loop and pushes toward a decision.
 
-This MVP is intentionally frontend-first, but the structure leaves room for:
+There's also a Live mode with mic input and a browser based moderator voice.
 
-- live Zoom or Teams ingestion
-- real-time voice or turn-taking analysis
-- adaptive prompt timing from model-driven signals
-- ambient room hardware or display surfaces
-- enterprise collaboration workflows and analytics layers
+## Roadmap
 
-The current rules engine can be replaced with richer AI inference later without changing the visual and interaction model.
+**v1, current prototype (web).** Browser based demo of the engine across the three scenario types. Real time signal scoring. Moderator presence visible in the conversation and audible in Live mode. Visual room state mapping.
+
+**v2, browser extension (next 3 months).** Chrome and Edge extension for Google Meet and Zoom Web. Listens to the meeting tab, surfaces signals to the host's side panel, optionally speaks interventions through the host's audio. Real TTS through ElevenLabs so the moderator voice actually sounds human.
+
+**v3, bot participant (6+ months).** ConvoFlow joins the meeting as its own participant with audio in and out. Speaks interventions directly into the call. Learns each team's specific dynamics over time. Native integrations with Zoom, Meet, and Teams. Post meeting summaries with conversation health metrics.
+
+## Tech
+
+Next.js 14, TypeScript, Tailwind. Engine is custom signal detection logic written in TypeScript, with an ML upgrade path planned for v2. Voice in v1 is the Web Speech API, moving to ElevenLabs in v2. Design is Linear inspired, built to read at a glance while a real conversation is happening.
+
+## Status
+
+Submitted as part of the Handshake Codex Challenge.
