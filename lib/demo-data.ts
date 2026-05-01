@@ -36,13 +36,13 @@ export const scenarios: Scenario[] = [
     pulse: "A voice fades from the room",
     description: "The room seems fine until absence becomes visible.",
     script: [
-      { participantId: "jon", text: "Prototype performance is stable on desktop now.", delay: 1000, topic: "performance" },
-      { participantId: "maya", text: "Good. I need confidence on the mobile pass too.", delay: 1600, topic: "performance" },
-      { participantId: "jon", text: "It needs one more optimization pass for the background field.", delay: 1700, topic: "performance" },
-      { participantId: "lena", text: "I can simplify the transition layering if needed.", delay: 1900, topic: "design" },
-      { participantId: "maya", text: "Let's do that if it preserves the calm feel.", delay: 1450, topic: "design" },
-      { participantId: "jon", text: "We still haven't heard the research risk on this.", delay: 2100, topic: "research" },
-      { participantId: "sora", text: "Users may miss why the prompts appear unless the timing feels earned.", delay: 2400, topic: "research" }
+      { participantId: "jon", text: "Prototype performance is stable on desktop now.", delay: 900, topic: "performance" },
+      { participantId: "jon", text: "Background rendering is optimized — render time down 40%.", delay: 1100, topic: "performance" },
+      { participantId: "maya", text: "Does that hold on mobile?", delay: 1400, topic: "performance" },
+      { participantId: "jon", text: "Not yet — one more pass before we can commit.", delay: 1000, topic: "performance" },
+      { participantId: "jon", text: "I'd strip the transition layering to get there.", delay: 1100, topic: "performance" },
+      { participantId: "lena", text: "That might soften the feel though.", delay: 2000, topic: "design" },
+      { participantId: "sora", text: "Users may miss why the prompts appear if the timing shifts.", delay: 2600, topic: "research" },
     ],
   },
   {

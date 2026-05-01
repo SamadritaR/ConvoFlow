@@ -6,6 +6,7 @@ import { participants, scenarios, demoSequence, SpotlightTone } from "@/lib/demo
 import { buildInsights, buildIntervention, buildMetrics } from "@/lib/conversation-engine";
 import { ConversationMetrics, Intervention, Message, Mode, Participant, ScenarioKey } from "@/lib/types";
 import { LiveAudioControls } from "@/components/live-audio-controls";
+import { ModeratorMessage } from "@/components/moderator-message";
 
 
 const motionEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -143,6 +144,22 @@ export function ConvoFlowApp() {
     [interventions, metrics],
   );
 
+  const groupFieldPill = useMemo(() => {
+    const total = participants.reduce(
+      (sum, p) => sum + (metrics.messageCountByParticipant[p.id] ?? 0),
+      0,
+    );
+    if (total < 3) return null;
+    if (metrics.loopScore > 0.58) return { variant: "converging" as StatusPillVariant, label: "DISCUSSION LOOPING" };
+    if (metrics.dominantParticipantId && metrics.balanceScore < 0.8)
+      return { variant: "diverging" as StatusPillVariant, label: "IMBALANCE FORMS" };
+    const hasSilent =
+      total >= 5 && participants.some((p) => (metrics.messageCountByParticipant[p.id] ?? 0) === 0);
+    if (hasSilent) return { variant: "quiet" as StatusPillVariant, label: "VOICE FADING" };
+    if (metrics.convergenceScore > 0.5) return { variant: "aligned" as StatusPillVariant, label: "ROOM ALIGNED" };
+    return null;
+  }, [metrics]);
+
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(interval);
@@ -164,6 +181,12 @@ export function ConvoFlowApp() {
       return;
     }
     setInterventions((current) => [nextIntervention, ...current].slice(0, 6));
+    if (nextIntervention.confidence >= 0.7) {
+      setMessages((current) => [
+        ...current,
+        createMessage("moderator", nextIntervention.text, "moderation"),
+      ]);
+    }
   }, [metrics, interventions, now]);
 
   useEffect(() => {
@@ -374,7 +397,7 @@ export function ConvoFlowApp() {
               />
             </AnimatePresence>
             <div className="border-b border-white/8 px-5 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-eyebrow uppercase tracking-[0.24em] text-mist/70">
                     Group field
@@ -383,24 +406,9 @@ export function ConvoFlowApp() {
                     Live room
                   </div>
                 </div>
-                <StatusPill
-                  variant={
-                    mode === "live"
-                      ? "quiet"
-                      : mode === "manual"
-                        ? "quiet"
-                        : isPlaying
-                          ? "converging"
-                          : "quiet"
-                  }
-                  label={
-                    mode === "live"
-                      ? "Live mode"
-                      : mode === "manual"
-                        ? "Manual mode"
-                        : spotlight?.title ?? activeScenario.pulse
-                  }
-                />
+                {groupFieldPill && (
+                  <StatusPill variant={groupFieldPill.variant} label={groupFieldPill.label} />
+                )}
               </div>
             </div>
 
@@ -423,7 +431,7 @@ export function ConvoFlowApp() {
                   }}
                   participants={participants}
                 />
-              ) : (
+              ) : mode === "manual" ? (
                 <ManualComposer
                   draft={draft}
                   mode={mode}
@@ -434,7 +442,7 @@ export function ConvoFlowApp() {
                   participants={participants}
                   selectedParticipantId={selectedParticipantId}
                 />
-              )}
+              ) : null}
             </div>
           </motion.section>
 
@@ -489,7 +497,7 @@ function TopBar({
       <div className="flex items-center gap-4">
         <div>
           <div className="text-eyebrow uppercase tracking-[0.24em] text-mist/70">ConvoFlow</div>
-          <div className="mt-1 text-body leading-none text-ink">Guides the room in real time</div>
+          <div className="mt-1 text-body leading-none text-ink">AI moderator for group conversations</div>
         </div>
       </div>
 
@@ -530,7 +538,7 @@ function TopBar({
         {mode === "scenario" && (
           <>
             <button
-              className="rounded-full border border-white/10 bg-white px-5 py-2.5 text-[13px] text-slate-950 transition"
+              className="rounded-full bg-white px-5 py-2.5 text-[13px] text-slate-950 transition"
               onClick={onPlayDemo}
               type="button"
             >
@@ -538,7 +546,7 @@ function TopBar({
             </button>
 
             <button
-              className="rounded-full border border-white/10 px-4 py-2.5 text-[13px] text-white/76 transition hover:border-white/25 hover:text-white"
+              className="cursor-default rounded-full border border-white/8 px-4 py-2.5 text-[13px] text-white/40"
               onClick={onPlay}
               type="button"
             >
@@ -652,6 +660,9 @@ function ConversationStream({
 
         <AnimatePresence initial={false}>
           {messages.map((message, index) => {
+            if (message.participantId === "moderator") {
+              return <ModeratorMessage key={message.id} text={message.text} />;
+            }
             const participant = participants.find(({ id }) => id === message.participantId);
             if (!participant) {
               return null;
@@ -760,10 +771,7 @@ function ManualComposer({
             }
             value={draft}
           />
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="text-eyebrow uppercase tracking-[0.18em] text-white/35">
-              {mode}
-            </div>
+          <div className="mt-3 flex items-center justify-end">
             <button
               className="rounded-full border border-white/10 bg-white px-4 py-2 text-body-sm text-slate-950 transition"
               onClick={onSend}

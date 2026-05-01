@@ -5,7 +5,6 @@ import {
   getModeratorVoice,
   getVoiceForParticipant,
   moderatorVoiceProfile,
-  participantVoiceProfiles,
 } from "@/lib/voice-profiles";
 import { useSpeechSynthesis } from "./use-speech-synthesis";
 
@@ -75,20 +74,12 @@ export function useScriptedMeeting({
           text: step.text,
           topic: step.topic,
         });
-        const voice = voiceMapRef.current.get(step.participantId);
-        const profile = participantVoiceProfiles[step.participantId];
-        speechSynthesis.speak(step.text, {
-          voice: voice ?? undefined,
-          volume: speechSynthesis.volume,
-          rate: profile?.rate,
-          pitch: profile?.pitch,
-        });
       }
       stepIndexRef.current = index + 1;
       setCurrentStepIndex(index + 1);
       setPendingAdvance(true);
     }, step.delay);
-  }, [speechSynthesis.speak, speechSynthesis.volume]);
+  }, []);
 
   // Keep a stable ref so the advancement effect doesn't list scheduleStep as a dep
   const scheduleStepRef = useRef(scheduleStep);
