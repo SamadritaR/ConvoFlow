@@ -10,6 +10,12 @@ This is not a meeting analytics tool. It does not summarize, transcribe, or scor
 
 The hard problem here is not detection. The hard problem is **presence**. An AI that can speak into a human conversation has to know when to stay silent. Most of ConvoFlow's design is about restraint, not capability. The engine continuously scores three structural failure modes. Below a confidence threshold, signals stay quiet in the host's peripheral vision. Above it, the moderator speaks. Once. Briefly. Then it goes back to listening.
 
+
+
+https://github.com/user-attachments/assets/9cf24e80-b05d-47fe-880b-7886ff910411
+
+
+
 ## What it watches for
 
 **Dominance.** When one voice's share of the talking gets too large for the group's size and balance.
