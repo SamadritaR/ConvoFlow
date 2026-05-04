@@ -128,6 +128,7 @@ export function ConvoFlowApp() {
   const timersRef = useRef<number[]>([]);
   const autoDemoRef = useRef(false);
   const streamRef = useRef<HTMLDivElement | null>(null);
+  const isAtBottomRef = useRef(true);
 
   const activeScenario = useMemo(
     () => scenarios.find((scenario) => scenario.key === scenarioKey) ?? scenarios[0],
@@ -166,14 +167,22 @@ export function ConvoFlowApp() {
   }, []);
 
   useEffect(() => {
-    if (!streamRef.current) {
-      return;
-    }
+    if (!streamRef.current || !isAtBottomRef.current) return;
     streamRef.current.scrollTo({
       top: streamRef.current.scrollHeight,
       behavior: "smooth",
     });
   }, [messages.length, visibleIntervention?.id]);
+
+  useEffect(() => {
+    const el = streamRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const nextIntervention = buildIntervention(metrics, participants, interventions, now);
@@ -647,7 +656,7 @@ function ConversationStream({
     <div className="relative min-h-0 border-r border-white/8">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[rgba(7,15,24,0.96)] to-transparent" />
       <div
-        className="scrollbar-thin relative flex h-full min-h-[340px] flex-col gap-[12px] overflow-y-auto px-5 py-5"
+        className="scrollbar-thin relative flex flex-col gap-[12px] overflow-y-auto px-5 py-5 max-h-[calc(100vh-256px)]"
         ref={streamRef}
       >
         {messages.length === 0 ? (
