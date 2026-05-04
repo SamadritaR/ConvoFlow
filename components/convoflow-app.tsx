@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { participants, scenarios, demoSequence, SpotlightTone } from "@/lib/demo-data";
+import { participants, scenarios, SpotlightTone } from "@/lib/demo-data";
 import { buildInsights, buildIntervention, buildMetrics } from "@/lib/conversation-engine";
 import { ConversationMetrics, Intervention, Message, Mode, Participant, ScenarioKey } from "@/lib/types";
 import { LiveAudioControls } from "@/components/live-audio-controls";
@@ -261,7 +261,6 @@ export function ConvoFlowApp() {
   const startGuidedDemo = () => {
     clearTimers();
     setMode("scenario");
-    setScenarioKey("dominant");
     setMessages([]);
     setInterventions([]);
     setIsPlaying(true);
@@ -273,23 +272,13 @@ export function ConvoFlowApp() {
     });
 
     let elapsed = 0;
-    for (const step of demoSequence) {
+    for (const step of activeScenario.script) {
       elapsed += step.delay;
       const timer = window.setTimeout(() => {
-        if (step.type === "message") {
-          setMessages((current) => [
-            ...current,
-            createMessage(step.participantId, step.text, step.topic),
-          ]);
-          return;
-        }
-
-        triggerSpotlight({
-          id: `${step.title}-${Date.now()}`,
-          title: step.title,
-          note: step.note,
-          tone: step.tone,
-        });
+        setMessages((current) => [
+          ...current,
+          createMessage(step.participantId, step.text, step.topic),
+        ]);
       }, elapsed);
       timersRef.current.push(timer);
     }
