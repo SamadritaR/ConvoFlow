@@ -1,62 +1,67 @@
 # ConvoFlow
 
-ConvoFlow is a frontend prototype for an AI-mediated conversation interface. It does not summarize or transcribe meetings. It demonstrates how an ambient system can improve group discussion quality in real time by sensing participation patterns, detecting imbalance, and introducing minimal moderation prompts.
+A perceptual instrument for group conversations.
 
-## What it demonstrates
+Most meetings fail on structure, not content. One voice takes over. A quieter person checks out. The group circles the same idea three times without landing. These patterns are visible in real time to anyone trained to watch for them, and invisible to everyone else. ConvoFlow makes them visible, and when the moment is right, audible.
 
-- A live meeting environment with four participants
-- Three guided demo scenarios:
-  - dominant speaker
-  - silent participant
-  - circular discussion
-- Manual mode for injecting messages as different participants
-- A visual intelligence layer that reacts to participation balance, silence, repetition, and convergence
-- A lightweight intervention engine that produces subtle prompts without turning the system into a chatbot
+## What this actually is
 
-## Tech stack
+This is not a meeting analytics tool. It does not summarize, transcribe, or score your meeting after the fact. It watches the *shape* of a conversation as it happens, and intervenes only when intervention is warranted. Think of it less as a productivity app and more as a sense organ the group did not previously have.
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- Framer Motion
+The hard problem here is not detection. The hard problem is **presence**. An AI that can speak into a human conversation has to know when to stay silent. Most of ConvoFlow's design is about restraint, not capability. The engine continuously scores three structural failure modes. Below a confidence threshold, signals stay quiet in the host's peripheral vision. Above it, the moderator speaks. Once. Briefly. Then it goes back to listening.
 
-## Run locally
+## What it watches for
 
-```bash
-npm install
-npm run dev
-```
+**Dominance.** When one voice's share of the talking gets too large for the group's size and balance.
 
-Then open `http://localhost:3000`.
+**Silence.** When a participant stays out of the conversation past the point where their input would normally land.
 
-## Product concept
+**Circularity.** When the discussion keeps returning to the same point without converging on a decision.
 
-Most tools capture conversations after the fact. ConvoFlow focuses on the quality of interaction while the conversation is still happening.
+These three are not arbitrary. They are the structural failure modes a skilled human facilitator catches by instinct, and the ones that quietly degrade meeting quality more than any content level problem.
 
-The prototype uses:
+## How presence works
 
-- a central conversation stream as the live room
-- a dynamic visual field to express energy, balance, and drift
-- a side intelligence layer for ambient prompts and state shifts
+Two layers, on purpose.
 
-The goal is that a user understands the product through motion, timing, and structure within seconds.
+**Quiet guidance.** Lower confidence signals (anywhere in the 0.5 to 0.8 range) appear in the side panel as small cards. The host sees them. The room does not. This is the moderator thinking out loud, not speaking out loud. It catches things a real moderator would also notice but might not act on.
 
-## Architecture
+**Intervention.** When confidence crosses 0.8, ConvoFlow speaks. The moderator card moves into the conversation column itself, distinct from participants, and in Live mode it speaks aloud through the moderator voice. One short sentence. Never a paragraph. Never two interventions in a row.
 
-- `app/`: App Router entrypoints and global styling
-- `components/convoflow-app.tsx`: primary experience, layout, motion, and interaction flow
-- `lib/demo-data.ts`: participants and demo scenarios
-- `lib/conversation-engine.ts`: rules-based metrics, insights, and interventions
-- `lib/types.ts`: shared types
+The threshold is the whole product. Tune it too low and the AI becomes a backseat driver and the room resents it. Tune it too high and it never earns its keep. 0.8 is where v1 lands. v2 will calibrate per team based on how often interventions are accepted versus dismissed.
 
-## Future vision
+## The three demo scenarios
 
-This MVP is intentionally frontend-first, but the structure leaves room for:
+The current build ships with three scripted scenarios that each isolate one failure mode, so you can see the engine react to a clean signal.
 
-- live Zoom or Teams ingestion
-- real-time voice or turn-taking analysis
-- adaptive prompt timing from model-driven signals
-- ambient room hardware or display surfaces
-- enterprise collaboration workflows and analytics layers
+**Dominant.** Maya stacks four messages back to back about a launch deadline. Other voices get one sentence each. The engine catches the imbalance forming and the moderator surfaces a redistribution.
 
-The current rules engine can be replaced with richer AI inference later without changing the visual and interaction model.
+**Silent.** Lena drops out of the conversation while the group keeps going on a topic where her input matters. The engine surfaces a gentle invite to bring her back in before her absence calcifies.
+
+**Circular.** The group returns to the same point three times without resolving. The engine names the loop and pushes toward a decision rather than letting it run for another cycle.
+
+There is also a Live mode where you talk into the mic as one of the participants and the engine responds in real time, with the moderator speaking through the browser's speech synthesis.
+
+## Why I am building this
+
+Most attempts at AI for meetings have been transcription tools wearing different costumes. They sit outside the conversation, write things down, and hand you a summary later. None of them are *in* the conversation. None of them are accountable for what happens next.
+
+I wanted to build the version that is in the room. That requires answering a question almost nobody in this space has answered well: what should an AI presence in a human conversation actually feel like? Not a tool. Not a participant either. Something more like a quiet fifth person whose only job is to notice what the room cannot notice about itself.
+
+The interesting work in ConvoFlow is not the signal detection. The interesting work is the design of restraint.
+
+## Roadmap
+
+**v1, current prototype.** Web based demo of the engine across the three scenario types. Real time signal scoring with the two layer presence model. Visual room state mapping. Browser based moderator voice in Live mode.
+
+**v2, browser extension (next 3 months).** Chrome and Edge extension that runs over Google Meet and Zoom Web. Captures tab audio, runs the engine, surfaces signals to the host's side panel, optionally speaks interventions through the host's audio output. Premium voice through ElevenLabs so the moderator stops sounding like a robot. Per team threshold calibration based on which interventions get accepted versus dismissed.
+
+**v3, bot participant (6+ months).** ConvoFlow joins the call as its own participant with audio in and out. Speaks interventions directly into the room rather than through the host. Native integrations with Zoom, Meet, and Teams. Post meeting summaries focused on conversation health, not content recap.
+
+## Tech
+
+Next.js 14, TypeScript, Tailwind CSS. The engine is custom signal detection logic written in TypeScript, with a clean upgrade path to learned models in v2. Voice in v1 runs on the browser's Web Speech API. The dashboard is built to be readable at a glance during a live conversation, which is a different design constraint than most analytics UI.
+
+## Status
+
+Submitted as part of the Handshake Codex Challenge. Initially aimed at engineering standups, cross functional product meetings, and group facilitators.
